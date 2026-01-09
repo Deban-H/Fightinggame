@@ -1,131 +1,521 @@
-
-
-       <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Battle Game</title>
+    <title>2D Fighting Game</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            text-align: center;
+            background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #gameContainer {
+            position: relative;
         }
         canvas {
             display: block;
-            margin: 0 auto;
-            background: #1a1a1a;
-            border: 2px solid #fff;
+            border: 5px solid #000;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
         .overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #FFD700;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            width: 50%;
+            color: #fff;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+        }
+        .overlay h2 {
+            color: #FFD700;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .overlay p, .overlay ul {
+            font-size: 16px;
+            line-height: 1.8;
+            margin: 10px 0;
+        }
+        .overlay ul {
+            text-align: left;
+            display: inline-block;
         }
         button {
-            padding: 10px 20px;
-            margin: 10px;
-            background-color: #555;
-            color: #fff;
-            border: none;
+            padding: 15px 30px;
+            margin: 15px;
+            background: linear-gradient(to bottom, #FFD700, #FFA500);
+            color: #000;
+            border: 3px solid #000;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
         }
         button:hover {
-            background-color: #777;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
         }
-        img {
-            width: 100px;
-            height: auto;
+        .mode-button {
+            display: inline-block;
+            width: 200px;
+            padding: 20px;
+            margin: 15px;
+        }
+        .char-button {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            display: inline-block;
+            margin: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Character Battle Game</h1>
-    <div id="instructions" class="overlay">
-        <h2>Game Instructions</h2>
-        <p>Welcome to the Character Battle Game!</p>
-        <p>Player 1: Choose your character between "Doraemon" and "Ninja Hattori".</p>
-        <p>Player 2 will automatically be assigned the other character.</p>
-<p><b>Note:To make this work both of the players need to be aligned side by side(NOT overlap) as in both the surfaces of each character should touch one another</b></p>
-        <p>Controls:</p>
-        <ul>
-            <li><strong>Player 1</strong>: Move Left: <strong>A</strong>, Move Right: <strong>D</strong>, Attack: <strong>S</strong></li>
-            <li><strong>Player 2</strong>: Move Left: <strong>Left Arrow</strong>, Move Right: <strong>Right Arrow</strong>, Attack: <strong>Down Arrow</strong></li>
-        </ul>
-        <button onclick="goToCharacterSelection()">Start Game</button>
-    </div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
 
-    <div id="characterSelection" class="overlay" style="display:none;">
-        <h2>Choose Your Character</h2>
-        <button onclick="selectCharacter('doraemon')"><img src="doraemon.png" alt="Doraemon"></button>
-        <button onclick="selectCharacter('ninja_hattori')"><img src="ninja_hattori.png" alt="Ninja Hattori"></button>
-    </div>
+        <div id="modeSelection" class="overlay">
+            <h2>⚔️ SELECT GAME MODE ⚔️</h2>
+            <div>
+                <button class="mode-button" onclick="selectMode('single')">
+                    <div style="font-size: 60px;">🤖</div>
+                    <div>SINGLE PLAYER</div>
+                    <div style="font-size: 12px;">(vs AI)</div>
+                </button>
+                <button class="mode-button" onclick="selectMode('two')">
+                    <div style="font-size: 60px;">👥</div>
+                    <div>TWO PLAYERS</div>
+                    <div style="font-size: 12px;">(vs Friend)</div>
+                </button>
+            </div>
+        </div>
 
-    <canvas id="gameCanvas"></canvas>
+        <div id="instructions" class="overlay" style="display:none;">
+            <h2>⚔️ CONTROLS ⚔️</h2>
+            <ul>
+                <li><strong>Player 1 (Left Side):</strong></li>
+                <li>A/D - Move Left/Right</li>
+                <li>W - Jump</li>
+                <li>S - Punch</li>
+                <li>E - Kick</li>
+                <li>Q - Special Move</li>
+            </ul>
+            <ul id="player2Controls">
+                <li><strong>Player 2 (Right Side):</strong></li>
+                <li>← / → - Move Left/Right</li>
+                <li>↑ - Jump</li>
+                <li>↓ - Punch</li>
+                <li>/ - Kick</li>
+                <li>. - Special Move</li>
+            </ul>
+            <button onclick="goToCharacterSelection()">CONTINUE</button>
+        </div>
+
+        <div id="characterSelection" class="overlay" style="display:none;">
+            <h2>SELECT YOUR FIGHTER</h2>
+            <p>Player 1, choose your character:</p>
+            <div>
+                <div class="char-button">
+                    <button onclick="selectCharacter('doraemon')">
+                        <div style="font-size: 80px;">🤖</div>
+                        <div>DORAEMON</div>
+                    </button>
+                </div>
+                <div class="char-button">
+                    <button onclick="selectCharacter('ninja_hattori')">
+                        <div style="font-size: 80px;">🥷</div>
+                        <div>NINJA HATTORI</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        canvas.width = 1000; // Increased width
-        canvas.height = 500; // Increased height
+        canvas.width = 1200;
+        canvas.height = 600;
 
-        const playerWidth = 50;
-        const playerHeight = 100;
-        const playerSpeed = 5;
-        const attackRange = 10;
-        const gameDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const GRAVITY = 0.8;
+        const JUMP_FORCE = -15;
+        const GROUND = canvas.height - 100;
+        const MOVE_SPEED = 6;
 
-        let player1 = {
-            x: 50,
-            y: canvas.height - playerHeight,
-            width: playerWidth,
-            height: playerHeight,
-            character: '',
-            image: null,
-            color: 'red',
-            moveLeft: false,
-            moveRight: false,
-            attack: false,
-            health: 100,
-            score: 0
-        };
+        let keys = {};
+        let gameRunning = false;
+        let gameStartTime;
+        let gameDuration = 99000;
+        let gameMode = '';
 
-        let player2 = {
-            x: canvas.width - playerWidth - 50,
-            y: canvas.height - playerHeight,
-            width: playerWidth,
-            height: playerHeight,
-            character: '',
-            image: null,
-            color: 'blue',
-            moveLeft: false,
-            moveRight: false,
-            attack: false,
-            health: 100,
-            score: 0
-        };
-
+        // Character images
         const characterImages = {
             'doraemon': new Image(),
             'ninja_hattori': new Image()
         };
-        characterImages['doraemon'].src = 'doraemon.jpg'; // Make sure these paths are correct
-        characterImages['ninja_hattori'].src = 'hatori.jpg'; // Make sure these paths are correct
+        characterImages['doraemon'].src = 'doraemon.jpg';
+        characterImages['ninja_hattori'].src = 'hatori.jpg';
 
-        let gameStartTime;
-        let gameRunning = false;
+        class Fighter {
+            constructor(x, isPlayer1) {
+                this.x = x;
+                this.y = GROUND;
+                this.width = 60;
+                this.height = 120;
+                this.velocityY = 0;
+                this.velocityX = 0;
+                this.isJumping = false;
+                this.health = 100;
+                this.maxHealth = 100;
+                this.isPlayer1 = isPlayer1;
+                this.facing = isPlayer1 ? 1 : -1;
+                
+                this.isAttacking = false;
+                this.attackFrame = 0;
+                this.attackCooldown = 0;
+                this.attackType = '';
+                this.hitbox = { x: 0, y: 0, width: 0, height: 0 };
+                
+                this.character = '';
+                this.image = null;
+                this.color = isPlayer1 ? '#FF4444' : '#4444FF';
+                this.emoji = '';
+                
+                this.animFrame = 0;
+                this.isAI = false;
+                this.aiTimer = 0;
+            }
+
+            update() {
+                this.velocityY += GRAVITY;
+                this.y += this.velocityY;
+
+                if (this.y >= GROUND) {
+                    this.y = GROUND;
+                    this.velocityY = 0;
+                    this.isJumping = false;
+                }
+
+                this.x += this.velocityX;
+                this.velocityX *= 0.9;
+
+                if (this.x < 0) {
+                    this.x = 0;
+                    this.velocityX = 0;
+                }
+                if (this.x > canvas.width - this.width) {
+                    this.x = canvas.width - this.width;
+                    this.velocityX = 0;
+                }
+
+                if (this.isAttacking) {
+                    this.attackFrame++;
+                    if (this.attackFrame > 15) {
+                        this.isAttacking = false;
+                        this.attackFrame = 0;
+                        this.attackType = '';
+                    }
+                }
+
+                if (this.attackCooldown > 0) this.attackCooldown--;
+
+                this.animFrame++;
+            }
+
+            move(direction) {
+                if (!this.isAttacking) {
+                    this.velocityX = direction * MOVE_SPEED;
+                    if (direction !== 0) this.facing = direction;
+                }
+            }
+
+            jump() {
+                if (!this.isJumping && this.y === GROUND) {
+                    this.velocityY = JUMP_FORCE;
+                    this.isJumping = true;
+                }
+            }
+
+            attack(type) {
+                if (!this.isAttacking && this.attackCooldown === 0) {
+                    this.isAttacking = true;
+                    this.attackFrame = 0;
+                    this.attackType = type;
+                    this.attackCooldown = 20;
+                    
+                    const hitboxWidth = type === 'special' ? 100 : 60;
+                    const hitboxHeight = type === 'kick' ? 40 : 50;
+                    
+                    this.hitbox = {
+                        x: this.x + (this.facing > 0 ? this.width : -hitboxWidth),
+                        y: this.y + (type === 'kick' ? 60 : 40),
+                        width: hitboxWidth,
+                        height: hitboxHeight,
+                        damage: type === 'special' ? 15 : type === 'kick' ? 8 : 5
+                    };
+                }
+            }
+
+            aiControl(opponent) {
+                this.aiTimer++;
+                
+                const distance = Math.abs(this.x - opponent.x);
+                
+                // Move towards opponent
+                if (distance > 90) {
+                    if (this.x < opponent.x) {
+                        this.move(1);
+                    } else {
+                        this.move(-1);
+                    }
+                } else {
+                    this.velocityX *= 0.8;
+                }
+
+                if (distance < 100 && this.aiTimer % 50 === 0) {
+                    const attackChoice = Math.random();
+                    if (attackChoice < 0.4) {
+                        this.attack('punch');
+                    } else if (attackChoice < 0.7) {
+                        this.attack('kick');
+                    } else {
+                        this.attack('special');
+                    }
+                }
+
+                if (this.aiTimer % 80 === 0 && Math.random() < 0.3) {
+                    this.jump();
+                }
+            }
+
+            draw() {
+                ctx.save();
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width/2, GROUND + this.height, 30, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw character image if available
+                if (this.image && this.image.complete && this.image.naturalWidth > 0) {
+                    ctx.save();
+                    if (this.facing < 0) {
+                        ctx.translate(this.x + this.width, this.y);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(this.image, 0, 0, this.width, this.height);
+                    } else {
+                        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                    }
+                    ctx.restore();
+                } else {
+                    const centerX = this.x + this.width/2;
+                    const wobble = Math.sin(this.animFrame * 0.2) * 2;
+              
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(centerX, this.y + 25 + wobble, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x + 15, this.y + 45, 30, 40);
+                    ctx.strokeRect(this.x + 15, this.y + 45, 30, 40);
+
+                    const armAngle = this.isAttacking ? -0.5 : Math.sin(this.animFrame * 0.1) * 0.2;
+                    
+                    ctx.save();
+                    ctx.translate(this.x + 15, this.y + 50);
+                    ctx.rotate(armAngle);
+                    ctx.fillRect(-5, 0, 10, 30);
+                    ctx.strokeRect(-5, 0, 10, 30);
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.translate(this.x + 45, this.y + 50);
+                    if (this.isAttacking && this.attackType === 'punch') {
+                        ctx.rotate(-armAngle * 3 * this.facing);
+                    } else {
+                        ctx.rotate(-armAngle);
+                    }
+                    ctx.fillRect(-5, 0, 10, 30);
+                    ctx.strokeRect(-5, 0, 10, 30);
+                    ctx.restore();
+
+                    const legAngle = Math.sin(this.animFrame * 0.1) * 0.3;
+                    
+                    ctx.save();
+                    ctx.translate(this.x + 20, this.y + 85);
+                    ctx.rotate(this.isAttacking && this.attackType === 'kick' ? 0.8 * this.facing : legAngle);
+                    ctx.fillRect(-5, 0, 10, 35);
+                    ctx.strokeRect(-5, 0, 10, 35);
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.translate(this.x + 40, this.y + 85);
+                    ctx.rotate(-legAngle);
+                    ctx.fillRect(-5, 0, 10, 35);
+                    ctx.strokeRect(-5, 0, 10, 35);
+                    ctx.restore();
+
+
+                    ctx.font = '30px Arial';
+                    ctx.fillText(this.emoji, centerX - 15, this.y + 30 + wobble);
+                }
+
+                if (this.isAI) {
+                    ctx.fillStyle = '#FFD700';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('AI', this.x + this.width/2, this.y - 10);
+                    ctx.textAlign = 'left';
+                }
+
+            
+                if (this.isAttacking) {
+                    const effectX = this.x + (this.facing > 0 ? this.width + 10 : -30);
+                    const effectY = this.y + (this.attackType === 'kick' ? 70 : 40);
+                    
+                    ctx.fillStyle = this.attackType === 'special' ? '#FFD700' : '#FFA500';
+                    ctx.globalAlpha = 0.7 - (this.attackFrame / 20);
+                    
+                    if (this.attackType === 'special') {
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(effectX + i * 20 * this.facing, effectY, 15 - i * 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    } else {
+                        ctx.font = 'bold 30px Arial';
+                        ctx.fillText(this.attackType === 'kick' ? '💥' : '👊', effectX, effectY);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.restore();
+            }
+
+            drawHealthBar() {
+                const barWidth = 400;
+                const barHeight = 30;
+                const x = this.isPlayer1 ? 50 : canvas.width - barWidth - 50;
+                const y = 30;
+
+                ctx.fillStyle = '#333';
+                ctx.fillRect(x, y, barWidth, barHeight);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, barWidth, barHeight);
+
+                const healthWidth = (this.health / this.maxHealth) * barWidth;
+                const gradient = ctx.createLinearGradient(x, y, x + healthWidth, y);
+                if (this.health > 60) {
+                    gradient.addColorStop(0, '#00ff00');
+                    gradient.addColorStop(1, '#00cc00');
+                } else if (this.health > 30) {
+                    gradient.addColorStop(0, '#ffff00');
+                    gradient.addColorStop(1, '#ffaa00');
+                } else {
+                    gradient.addColorStop(0, '#ff0000');
+                    gradient.addColorStop(1, '#cc0000');
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, y, healthWidth, barHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = this.isPlayer1 ? 'left' : 'right';
+                const label = this.isAI ? `AI: ${this.character}` : `P${this.isPlayer1 ? '1' : '2'}: ${this.character}`;
+                ctx.fillText(label, this.isPlayer1 ? x : x + barWidth, y - 10);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        let player1 = new Fighter(100, true);
+        let player2 = new Fighter(canvas.width - 160, false);
+
+
+        function drawInitialState() {
+            drawBackground();
+
+            player1.emoji = '🤖';
+            player2.emoji = '🥷';
+            player1.draw();
+            player2.draw();
+        }
+
+        function drawBackground() {
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0a0a1a');
+            gradient.addColorStop(0.5, '#1a0a2e');
+            gradient.addColorStop(1, '#2d1b3d');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Mysterious particles/lights
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height * 0.7;
+                const size = Math.random() * 2;
+                ctx.fillStyle = `rgba(255, 100, 100, ${Math.random() * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#1a1a2a';
+            ctx.fillRect(0, GROUND + 120, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#ff2244';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND + 120);
+            ctx.lineTo(canvas.width, GROUND + 120);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = 'rgba(255, 34, 68, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+        }
+
+        function selectMode(mode) {
+            gameMode = mode;
+            document.getElementById('modeSelection').style.display = 'none';
+            document.getElementById('instructions').style.display = 'block';
+            
+            if (mode === 'single') {
+                player2.isAI = true;
+                document.getElementById('player2Controls').style.display = 'none';
+            } else {
+                player2.isAI = false;
+                document.getElementById('player2Controls').style.display = 'block';
+            }
+        }
 
         function goToCharacterSelection() {
             document.getElementById('instructions').style.display = 'none';
@@ -133,118 +523,145 @@
         }
 
         function selectCharacter(character) {
-            player1.character = character;
+            player1.character = character === 'doraemon' ? 'Doraemon' : 'Hattori';
+            player1.emoji = character === 'doraemon' ? '🤖' : '🥷';
             player1.image = characterImages[character];
-            player2.character = character === 'doraemon' ? 'ninja_hattori' : 'doraemon';
-            player2.image = characterImages[player2.character];
+            
+            player2.character = character === 'doraemon' ? 'Hattori' : 'Doraemon';
+            player2.emoji = character === 'doraemon' ? '🥷' : '🤖';
+            player2.image = characterImages[character === 'doraemon' ? 'ninja_hattori' : 'doraemon'];
+            
             document.getElementById('characterSelection').style.display = 'none';
             startGame();
         }
 
-        function drawPlayer(player) {
-            if (player.image) {
-                ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
-            } else {
-                ctx.fillStyle = player.color;
-                ctx.fillRect(player.x, player.y, player.width, player.height);
-            }
-        }
+        function checkCollision(fighter1, fighter2) {
+            if (!fighter1.isAttacking) return;
 
-        function drawHealthBar(player, x, y) {
-            ctx.fillStyle = 'gray';
-            ctx.fillRect(x, y, 100, 10);
-            ctx.fillStyle = player.color;
-            ctx.fillRect(x, y, player.health, 10);
+            const hb = fighter1.hitbox;
+            if (hb.x < fighter2.x + fighter2.width &&
+                hb.x + hb.width > fighter2.x &&
+                hb.y < fighter2.y + fighter2.height &&
+                hb.y + hb.height > fighter2.y) {
+                
+                fighter2.health -= hb.damage;
+                fighter2.health = Math.max(0, fighter2.health);
+                
+                fighter2.velocityX = fighter1.facing * 8;
+                fighter2.velocityY = -5;
+                
+                fighter1.isAttacking = false;
+            }
         }
 
         function drawTimer() {
-            const elapsedTime = Date.now() - gameStartTime;
-            const timeLeft = Math.max(0, (gameDuration - elapsedTime) / 1000);
-            ctx.fillStyle = 'white';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Time Left: ${timeLeft.toFixed(1)}s`, canvas.width / 2 - 50, 50);
+            const elapsed = (Date.now() - gameStartTime) / 1000;
+            const timeLeft = Math.max(0, 99 - Math.floor(elapsed));
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(timeLeft, canvas.width / 2, 60);
+            ctx.fillText(timeLeft, canvas.width / 2, 60);
+            ctx.textAlign = 'left';
         }
 
-        function handleMovement() {
-            if (player1.moveLeft) player1.x -= playerSpeed;
-            if (player1.moveRight) player1.x += playerSpeed;
+        function gameLoop() {
+            if (!gameRunning) return;
 
-            if (player2.moveLeft) player2.x -= playerSpeed;
-            if (player2.moveRight) player2.x += playerSpeed;
-        }
+            drawBackground();
 
-        function handleAttacks() {
-            if (player1.attack && Math.abs(player1.x + player1.width - player2.x) < attackRange) {
-                player2.health -= 10;
-                player1.score += 10;
-                player1.attack = false;
+
+            if (player2.isAI) {
+                player2.aiControl(player1);
             }
 
-            if (player2.attack && Math.abs(player2.x - (player1.x + player1.width)) < attackRange) {
-                player1.health -= 10;
-                player2.score += 10;
-                player2.attack = false;
-            }
-        }
+            player1.update();
+            player2.update();
 
-        function updateGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            checkCollision(player1, player2);
+            checkCollision(player2, player1);
 
-            drawPlayer(player1);
-            drawPlayer(player2);
+            player1.draw();
+            player2.draw();
 
-            drawHealthBar(player1, 20, 20);
-            drawHealthBar(player2, canvas.width - 120, 20);
-
-            ctx.fillStyle = 'white';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Player 1 Score: ${player1.score}`, 20, 50);
-            ctx.fillText(`Player 2 Score: ${player2.score}`, canvas.width - 180, 50);
+            player1.drawHealthBar();
+            player2.drawHealthBar();
 
             drawTimer();
 
-            handleMovement();
-            handleAttacks();
-
             if (player1.health <= 0 || player2.health <= 0 || Date.now() - gameStartTime >= gameDuration) {
-                ctx.font = '30px Arial';
-                ctx.fillText('Game Over!', canvas.width / 2 - 80, canvas.height / 2);
-                ctx.fillText(`Player 1 Score: ${player1.score}`, canvas.width / 2 - 120, canvas.height / 2 + 40);
-                ctx.fillText(`Player 2 Score: ${player2.score}`, canvas.width / 2 - 120, canvas.height / 2 + 80);
+                gameRunning = false;
+                showGameOver();
                 return;
             }
 
-            requestAnimationFrame(updateGame);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function showGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 5;
+            ctx.strokeText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
+
+            const winner = player1.health > player2.health ? player1 : player2;
+            ctx.font = 'bold 48px Arial';
+            const winnerText = winner.isAI ? `${winner.character} (AI) WINS!` : `${winner.character} WINS!`;
+            ctx.strokeText(winnerText, canvas.width / 2, canvas.height / 2 + 30);
+            ctx.fillText(winnerText, canvas.width / 2, canvas.height / 2 + 30);
+
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('Refresh to play again', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.textAlign = 'left';
         }
 
         document.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'a': player1.moveLeft = true; break;
-                case 'd': player1.moveRight = true; break;
-                case 's': player1.attack = true; break;
-                case 'ArrowLeft': player2.moveLeft = true; break;
-                case 'ArrowRight': player2.moveRight = true; break;
-                case 'ArrowDown': player2.attack = true; break;
+            if (!gameRunning) return;
+
+
+            if (e.key === 'a' || e.key === 'A') player1.move(-1);
+            if (e.key === 'd' || e.key === 'D') player1.move(1);
+            if (e.key === 'w' || e.key === 'W') player1.jump();
+            if (e.key === 's' || e.key === 'S') player1.attack('punch');
+            if (e.key === 'e' || e.key === 'E') player1.attack('kick');
+            if (e.key === 'q' || e.key === 'Q') player1.attack('special');
+
+            if (!player2.isAI) {
+                if (e.key === 'ArrowLeft') player2.move(-1);
+                if (e.key === 'ArrowRight') player2.move(1);
+                if (e.key === 'ArrowUp') player2.jump();
+                if (e.key === 'ArrowDown') player2.attack('punch');
+                if (e.key === '/') player2.attack('kick');
+                if (e.key === '.') player2.attack('special');
             }
         });
 
         document.addEventListener('keyup', (e) => {
-            switch (e.key) {
-                case 'a': player1.moveLeft = false; break;
-                case 'd': player1.moveRight = false; break;
-                case 's': player1.attack = false; break;
-                case 'ArrowLeft': player2.moveLeft = false; break;
-                case 'ArrowRight': player2.moveRight = false; break;
-                case 'ArrowDown': player2.attack = false; break;
+            if (e.key === 'a' || e.key === 'A' || e.key === 'd' || e.key === 'D') {
+                player1.velocityX *= 0.5;
+            }
+            if (!player2.isAI && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                player2.velocityX *= 0.5;
             }
         });
 
         function startGame() {
             gameStartTime = Date.now();
             gameRunning = true;
-            updateGame();
+            gameLoop();
         }
+
+        drawInitialState();
     </script>
 </body>
 </html>
-
